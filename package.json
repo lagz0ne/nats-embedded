@@ -5,8 +5,8 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "bun run --filter 'nats-embedded' build",
-    "test": "bun run --filter 'nats-embedded' test",
+    "build": "bun run --filter '@lagz0ne/nats-embedded' build",
+    "test": "bun run --filter '@lagz0ne/nats-embedded' test",
     "download": "bun run scripts/build-platforms.ts"
   },
   "devDependencies": {
