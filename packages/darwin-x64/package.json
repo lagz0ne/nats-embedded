@@ -1,0 +1,14 @@
+{
+  "name": "@nats-embedded/darwin-x64",
+  "version": "0.1.0",
+  "description": "nats-server binary for darwin x64",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lagz0ne/nats-embedded",
+    "directory": "packages/darwin-x64"
+  },
+  "os": ["darwin"],
+  "cpu": ["x64"],
+  "files": ["nats-server", "LICENSE"]
+}

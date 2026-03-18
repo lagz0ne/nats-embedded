@@ -1,0 +1,15 @@
+{
+  "name": "nats-embedded-monorepo",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "bun run --filter 'nats-embedded' build",
+    "test": "bun run --filter 'nats-embedded' test",
+    "download": "bun run scripts/build-platforms.ts"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
+}

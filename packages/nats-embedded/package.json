@@ -1,0 +1,45 @@
+{
+  "name": "nats-embedded",
+  "version": "0.1.0",
+  "description": "Embedded NATS server for Node.js and Bun — managed child process with random port allocation",
+  "type": "module",
+  "license": "Apache-2.0",
+  "author": "lagz0ne",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lagz0ne/nats-embedded",
+    "directory": "packages/nats-embedded"
+  },
+  "homepage": "https://github.com/lagz0ne/nats-embedded",
+  "bugs": "https://github.com/lagz0ne/nats-embedded/issues",
+  "keywords": ["nats", "embedded", "messaging", "testing", "pubsub", "jetstream"],
+  "engines": {
+    "node": ">=18"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": ["dist", "LICENSE"],
+  "scripts": {
+    "build": "tsc",
+    "test": "bun test"
+  },
+  "optionalDependencies": {
+    "@nats-embedded/linux-x64": "0.1.0",
+    "@nats-embedded/linux-arm64": "0.1.0",
+    "@nats-embedded/darwin-x64": "0.1.0",
+    "@nats-embedded/darwin-arm64": "0.1.0",
+    "@nats-embedded/win32-x64": "0.1.0",
+    "@nats-embedded/win32-arm64": "0.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "@types/node": "^22.0.0",
+    "bun-types": "^1.2.0"
+  }
+}

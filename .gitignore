@@ -1,0 +1,14 @@
+node_modules/
+dist/
+*.tgz
+
+# Platform binaries (populated by CI/download script)
+packages/linux-x64/nats-server
+packages/linux-arm64/nats-server
+packages/darwin-x64/nats-server
+packages/darwin-arm64/nats-server
+packages/win32-x64/nats-server.exe
+packages/win32-arm64/nats-server.exe
+
+# JetStream store dirs
+/tmp/js-*
