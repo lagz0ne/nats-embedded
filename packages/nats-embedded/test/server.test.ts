@@ -36,7 +36,8 @@ describe("NatsServer", () => {
     await server.stop();
     const exitCode = await server.exited;
 
-    expect(exitCode).toBe(0);
+    // On Unix SIGTERM yields exit code 0; on Windows it's null (process killed)
+    expect(exitCode === 0 || exitCode === null).toBe(true);
 
     // Verify port is no longer listening
     const err = await new Promise<Error>((resolve) => {
@@ -81,7 +82,7 @@ describe("NatsServer", () => {
     await server.stop();
 
     const code = await exitedPromise;
-    expect(code).toBe(0);
+    expect(code === 0 || code === null).toBe(true);
     server = undefined;
   });
 });
