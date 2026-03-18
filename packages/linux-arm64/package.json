@@ -1,5 +1,5 @@
 {
-  "name": "nats-embedded-linux-arm64",
+  "name": "@lagz0ne/nats-embedded-linux-arm64",
   "version": "0.1.0",
   "description": "nats-server binary for linux arm64",
   "license": "Apache-2.0",
