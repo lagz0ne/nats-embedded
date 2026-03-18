@@ -30,12 +30,12 @@
     "test": "bun test"
   },
   "optionalDependencies": {
-    "@nats-embedded/linux-x64": "0.1.0",
-    "@nats-embedded/linux-arm64": "0.1.0",
-    "@nats-embedded/darwin-x64": "0.1.0",
-    "@nats-embedded/darwin-arm64": "0.1.0",
-    "@nats-embedded/win32-x64": "0.1.0",
-    "@nats-embedded/win32-arm64": "0.1.0"
+    "nats-embedded-linux-x64": "0.1.0",
+    "nats-embedded-linux-arm64": "0.1.0",
+    "nats-embedded-darwin-x64": "0.1.0",
+    "nats-embedded-darwin-arm64": "0.1.0",
+    "nats-embedded-win32-x64": "0.1.0",
+    "nats-embedded-win32-arm64": "0.1.0"
   },
   "devDependencies": {
     "typescript": "^5.7.0",

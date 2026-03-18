@@ -5,12 +5,12 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const PLATFORM_MAP: Record<string, string> = {
-  "linux-x64": "@nats-embedded/linux-x64",
-  "linux-arm64": "@nats-embedded/linux-arm64",
-  "darwin-x64": "@nats-embedded/darwin-x64",
-  "darwin-arm64": "@nats-embedded/darwin-arm64",
-  "win32-x64": "@nats-embedded/win32-x64",
-  "win32-arm64": "@nats-embedded/win32-arm64",
+  "linux-x64": "nats-embedded-linux-x64",
+  "linux-arm64": "nats-embedded-linux-arm64",
+  "darwin-x64": "nats-embedded-darwin-x64",
+  "darwin-arm64": "nats-embedded-darwin-arm64",
+  "win32-x64": "nats-embedded-win32-x64",
+  "win32-arm64": "nats-embedded-win32-arm64",
 };
 
 const BINARY_NAME = platform() === "win32" ? "nats-server.exe" : "nats-server";
