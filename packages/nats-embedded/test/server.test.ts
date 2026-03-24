@@ -54,7 +54,7 @@ describe("NatsServer", () => {
   });
 
   test("starts with JetStream enabled", async () => {
-    server = await NatsServer.start({ jetstream: true, debug: false });
+    server = await NatsServer.start({ jetstream: true });
 
     // Connect and verify JetStream is advertised in INFO
     const sock = createConnection(server.port, "127.0.0.1");
@@ -72,6 +72,16 @@ describe("NatsServer", () => {
     server = await NatsServer.start({ host: "0.0.0.0" });
 
     expect(server.url).toMatch(/^nats:\/\/0\.0\.0\.0:\d+$/);
+    expect(server.port).toBeGreaterThan(0);
+  });
+
+  test("debug flag enables NATS debug output", async () => {
+    server = await NatsServer.start({ debug: true, serverName: "test-dbg" });
+    expect(server.port).toBeGreaterThan(0);
+  });
+
+  test("storeDir without jetstream is accepted by nats-server", async () => {
+    server = await NatsServer.start({ storeDir: "/tmp/nats-test-nojs" });
     expect(server.port).toBeGreaterThan(0);
   });
 
