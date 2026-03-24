@@ -1,6 +1,6 @@
 {
   "name": "@lagz0ne/nats-embedded",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Embedded NATS server for Node.js and Bun — managed child process with random port allocation",
   "type": "module",
   "license": "Apache-2.0",
@@ -16,30 +16,38 @@
   "engines": {
     "node": ">=18"
   },
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     }
   },
   "files": ["dist", "LICENSE"],
   "scripts": {
-    "build": "tsc",
+    "build": "tsdown",
     "test": "bun test"
   },
   "optionalDependencies": {
-    "@lagz0ne/nats-embedded-linux-x64": "0.3.0",
-    "@lagz0ne/nats-embedded-linux-arm64": "0.3.0",
-    "@lagz0ne/nats-embedded-darwin-x64": "0.3.0",
-    "@lagz0ne/nats-embedded-darwin-arm64": "0.3.0",
-    "@lagz0ne/nats-embedded-win32-x64": "0.3.0",
-    "@lagz0ne/nats-embedded-win32-arm64": "0.3.0"
+    "@lagz0ne/nats-embedded-linux-x64": "0.3.1",
+    "@lagz0ne/nats-embedded-linux-arm64": "0.3.1",
+    "@lagz0ne/nats-embedded-darwin-x64": "0.3.1",
+    "@lagz0ne/nats-embedded-darwin-arm64": "0.3.1",
+    "@lagz0ne/nats-embedded-win32-x64": "0.3.1",
+    "@lagz0ne/nats-embedded-win32-arm64": "0.3.1"
   },
   "devDependencies": {
-    "typescript": "^5.7.0",
     "@types/node": "^22.0.0",
-    "bun-types": "^1.2.0"
+    "bun-types": "^1.2.0",
+    "tsdown": "^0.21.4",
+    "typescript": "^5.7.0"
   }
 }
