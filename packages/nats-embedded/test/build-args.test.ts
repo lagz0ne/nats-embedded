@@ -56,10 +56,23 @@ describe("buildArgs", () => {
     expect(args[args.indexOf("--auth") + 1]).toBe("s3cret");
   });
 
-  test("config passes through as -c", () => {
+  test("config passes through as -c when no generated config", () => {
     const args = buildArgs({ config: "/etc/nats.conf" });
     expect(args).toContain("-c");
     expect(args[args.indexOf("-c") + 1]).toBe("/etc/nats.conf");
+  });
+
+  test("configPath overrides opts.config for -c flag", () => {
+    const args = buildArgs({ config: "/etc/nats.conf" }, "/tmp/generated.conf");
+    expect(args).toContain("-c");
+    expect(args[args.indexOf("-c") + 1]).toBe("/tmp/generated.conf");
+    expect(args).not.toContain("/etc/nats.conf");
+  });
+
+  test("websocket option is not passed as CLI flag", () => {
+    const args = buildArgs({ websocket: true });
+    expect(args).not.toContain("--websocket");
+    expect(args).not.toContain("websocket");
   });
 
   test("extra args are appended last", () => {

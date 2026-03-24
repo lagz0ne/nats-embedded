@@ -1,6 +1,10 @@
 import { spawn, type ChildProcess } from "node:child_process";
+import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { resolve } from "./resolve.js";
-import { parsePort } from "./parse.js";
+import { parsePort, parseWsPort } from "./parse.js";
+import { buildConfig } from "./config.js";
 
 export interface NatsServerOptions {
   // ── Server ──────────────────────────────────────────────────────────
@@ -85,6 +89,11 @@ export interface NatsServerOptions {
   /** Profiling HTTP port */
   profile?: number;
 
+  // ── WebSocket ───────────────────────────────────────────────────────
+  /** WebSocket listener. true = embedded defaults (random port, no TLS).
+   *  Object = full websocket config block passed to NATS. */
+  websocket?: boolean | Record<string, unknown>;
+
   // ── Wrapper ─────────────────────────────────────────────────────────
   /** Forward nats-server stderr to process.stderr. Default: false */
   verbose?: boolean;
@@ -102,7 +111,7 @@ export interface NatsServerOptions {
  * - string/number options: flag + value
  * - string[] options: flag + comma-joined value
  *
- * Keys not in this map are handled separately (host, port, verbose, args).
+ * Keys not in this map are handled separately (host, port, verbose, websocket, config, args).
  */
 const FLAG_MAP: Record<string, string> = {
   serverName: "--server_name",
@@ -137,10 +146,9 @@ const FLAG_MAP: Record<string, string> = {
   connectRetries: "--connect_retries",
   clusterListen: "--cluster_listen",
   profile: "--profile",
-  config: "-c",
 };
 
-export function buildArgs(opts: NatsServerOptions): string[] {
+export function buildArgs(opts: NatsServerOptions, configPath?: string): string[] {
   const host = opts.host ?? "127.0.0.1";
   const port = opts.port ?? -1;
   const args = ["-a", host, "-p", String(port)];
@@ -157,6 +165,12 @@ export function buildArgs(opts: NatsServerOptions): string[] {
     }
   }
 
+  if (configPath) {
+    args.push("-c", configPath);
+  } else if (opts.config) {
+    args.push("-c", opts.config);
+  }
+
   if (opts.args) args.push(...opts.args);
   return args;
 }
@@ -166,15 +180,31 @@ export class NatsServer {
   readonly url: string;
   /** Assigned port */
   readonly port: number;
+  /** WebSocket port (undefined if websocket not enabled) */
+  readonly wsPort?: number;
+  /** WebSocket URL (undefined if websocket not enabled) */
+  readonly wsUrl?: string;
   /** Resolves with the exit code when the process exits (for crash detection) */
   readonly exited: Promise<number | null>;
 
   private proc: ChildProcess;
+  private configDir: string | null;
 
-  private constructor(proc: ChildProcess, host: string, port: number) {
+  private constructor(
+    proc: ChildProcess,
+    host: string,
+    port: number,
+    wsPort: number | undefined,
+    configDir: string | null,
+  ) {
     this.proc = proc;
     this.port = port;
     this.url = `nats://${host}:${port}`;
+    if (wsPort !== undefined) {
+      this.wsPort = wsPort;
+      this.wsUrl = `ws://${host}:${wsPort}`;
+    }
+    this.configDir = configDir;
     this.exited = new Promise((res) => {
       proc.on("exit", (code) => res(code));
     });
@@ -182,50 +212,78 @@ export class NatsServer {
 
   static async start(opts: NatsServerOptions = {}): Promise<NatsServer> {
     const bin = resolve();
-    const args = buildArgs(opts);
     const host = opts.host ?? "127.0.0.1";
+    const needWs = !!opts.websocket;
+
+    // Generate config file if needed (websocket requires config block)
+    let configDir: string | null = null;
+    let configPath: string | undefined;
+    const configContent = buildConfig(opts);
+    if (configContent) {
+      configDir = mkdtempSync(join(tmpdir(), "nats-embedded-"));
+      configPath = join(configDir, "nats.conf");
+      writeFileSync(configPath, configContent);
+    }
+
+    const args = buildArgs(opts, configPath);
 
     const proc = spawn(bin, args, {
       stdio: ["ignore", "ignore", "pipe"],
     });
 
-    const assignedPort = await new Promise<number>((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        proc.kill("SIGKILL");
-        reject(new Error("nats-server did not start within 5s"));
-      }, 5000);
+    const result = await new Promise<{ tcpPort: number; wsPort?: number }>(
+      (resolve, reject) => {
+        const timeout = setTimeout(() => {
+          proc.kill("SIGKILL");
+          reject(new Error("nats-server did not start within 5s"));
+        }, 5000);
 
-      proc.on("error", (err) => {
-        clearTimeout(timeout);
-        reject(err);
-      });
+        proc.on("error", (err) => {
+          clearTimeout(timeout);
+          reject(err);
+        });
 
-      proc.on("exit", (code) => {
-        clearTimeout(timeout);
-        reject(new Error(`nats-server exited with code ${code} before ready`));
-      });
+        proc.on("exit", (code) => {
+          clearTimeout(timeout);
+          reject(
+            new Error(`nats-server exited with code ${code} before ready`),
+          );
+        });
 
-      let buffer = "";
-      proc.stderr!.on("data", (chunk: Buffer) => {
-        const text = chunk.toString();
-        if (opts.verbose) process.stderr.write(text);
-        buffer += text;
-        const lines = buffer.split("\n");
-        buffer = lines.pop()!;
-        for (const line of lines) {
-          const parsed = parsePort(line);
-          if (parsed !== null) {
-            clearTimeout(timeout);
-            // Stop listening for exit as an error once we have the port
-            proc.removeAllListeners("exit");
-            resolve(parsed);
-            return;
+        let tcpPort: number | null = null;
+        let wsPort: number | null = null;
+        let resolved = false;
+        let buffer = "";
+
+        proc.stderr!.on("data", (chunk: Buffer) => {
+          const text = chunk.toString();
+          if (opts.verbose) process.stderr.write(text);
+          if (resolved) return;
+          buffer += text;
+          const lines = buffer.split("\n");
+          buffer = lines.pop()!;
+          for (const line of lines) {
+            const tcp = parsePort(line);
+            if (tcp !== null) tcpPort = tcp;
+            const ws = parseWsPort(line);
+            if (ws !== null) wsPort = ws;
+
+            if (tcpPort !== null && (!needWs || wsPort !== null)) {
+              resolved = true;
+              clearTimeout(timeout);
+              proc.removeAllListeners("exit");
+              resolve({
+                tcpPort,
+                wsPort: wsPort ?? undefined,
+              });
+              return;
+            }
           }
-        }
-      });
-    });
+        });
+      },
+    );
 
-    return new NatsServer(proc, host, assignedPort);
+    return new NatsServer(proc, host, result.tcpPort, result.wsPort, configDir);
   }
 
   /** Gracefully stop the server (SIGTERM → 5s timeout → SIGKILL) */
@@ -240,7 +298,14 @@ export class NatsServer {
       this.proc.kill("SIGKILL");
       await this.exited;
     }
+    if (this.configDir) {
+      try {
+        rmSync(this.configDir, { recursive: true });
+      } catch {}
+      this.configDir = null;
+    }
   }
 }
 
 export { resolve as resolveBinary } from "./resolve.js";
+export { buildConfig } from "./config.js";
